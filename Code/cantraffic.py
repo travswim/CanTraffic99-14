@@ -126,13 +126,20 @@ def pop_random(lst):
     idx = random.randrange(0, len(lst) +1 )
     return lst.pop(idx)
 
+def rounder(num):
+    a = list(map(int,str(num)))
+    x = math.pow(10, len(a)-1)
+    return int((a[0]+1)*x)
+
 def plotfatal():
     fat = []
     nonfat = []
+    max_feature = []
     year = 'C_YEAR'
     for item in df[year].unique():
         fat.append(fatal(1, item))
         nonfat.append(fatal(2, item))
+    max_feature = [x + y for x, y in zip(fat, nonfat)]
     # for item in df[feature].unique():
     #     print item
     percentage = map(float, np.array(fat))/(np.array(fat) + np.array(nonfat))*100
@@ -143,35 +150,94 @@ def plotfatal():
     ind = np.arange(N)    # the x locations for the groups
     width = 0.50       # the width of the bars: can also be len(x) sequence
     p1 = plt.bar(ind, tuple(fat), width, color='r')
-    # p2 = plt.bar(ind, tuple(nonfat), width, color = 'y', bottom = nonfat)
+    p2 = plt.bar(ind, tuple(nonfat), width, color = 'y', bottom = fat)
     plt.ylabel('Number of accidents')
     plt.title('Canadian Fatal Vehicle Accidents by Year')
     plt.xticks(ind, tuple(map(str, range(start, end + 1))))
-    plt.yticks(np.arange(0, 8000, 1000))
-
+    plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
+    plt.legend((p1, p2), ('Fatal', 'Non-Fatal'))
     plt.show()
 # plotfatal()
-def rounder(num):
-    a = list(map(int,str(num)))
-    x = math.pow(10, len(a)-1)
-    return int((a[0]+1)*x)
+
 
 def plot():
     feature = 'C_WTHR'
+    N = end - start + 1
+    ind = np.arange(N)
+    width = 0.5
     weatherItem = {}
     pairs = {}
+    percentage = {}
+    p = {}
+    condition = 'Weather'
     colours = ['r', 'b', 'k', 'w', 'm', 'g', 'c', 'y', 'yellow', 'aqua']
+    random.shuffle(colours)
     legend = {'1': 'sunny', '2': 'cloudy', '3': 'rainny', '4': 'snowing', \
     '5': 'sleet', '6': 'visibility', '7': 'windy', 'Q': 'other', 'U': 'unknown',\
     'X': 'N/A'}
+    label = []
+    val = []
+    bottoms = []
+    max_feature = [0] * N
+
+    k=0
+    for key in legend.keys():
+        pairs["{0}".format(key)] = colours.pop()
     for item in df[feature].unique():
+
+        bottoms.append(item)
+        # print bottoms[k]
+        # print item
         lst = []
         for year in range(start, end + 1):
             lst.append(weather(1, item, year))
         weatherItem["{0}".format(item)] = lst
+        # value.append(weatherItem[item])
+        label.append(legend[item])
+        # print weatherItem[item]
+        # print max_feature
+        max_feature = [x + y for x, y in zip(max_feature, list(weatherItem[item]))]
+        # print max_feature
+        if k == 0:
+
+            p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item])
+
+        else:
+            # print bottoms[x]
+            p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item], \
+
+            bottom = tuple(weatherItem[bottoms[k-1]]))
+            # print bottoms[k]
+            # print bottoms[k-1]
+
+        val.append(p["p{0}".format(k)])
+        k += 1
+        # print k
+
+    newDF = pd.DataFrame(weatherItem)
+    years = range(start, end + 1)
+    headers = list(newDF.columns.values)
+
     for key, value in legend.items():
-        pairs["{0}".format(key)] = colours.pop()
-    print pairs
+        for header in headers:
+            if key == header:
+                newDF.rename(columns={key:value}, inplace=True)
+            else: continue
+
+    newDF['Total'] = newDF.sum(axis=1)
+    newDF['Year'] = years
+    # print p
+    # print newDF
+    plt.ylabel('Number of accidents')
+    plt.title("Canadian Fatal Vehicle Accidents by Year due to {0}".format(condition))
+    plt.xticks(ind, tuple(map(str, range(start, end + 1))))
+    # plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
+    plt.yticks(np.arange(0, rounder(max(newDF['Total'])), rounder(max(newDF['Total']))/10))
+    plt.legend(tuple(val), tuple(label), loc='center left', bbox_to_anchor=(1, 0.5))
+    # print tuple(list(value)
+    # print tuple(label)
+
+    plt.show()
 plot()
 # def plotweather(feature, variable, start, end):
 #     colours = ['r', 'b', 'k', 'w', 'm', 'g', 'c', 'y', 'yellow', 'aqua']
@@ -211,5 +277,5 @@ plot()
 #     plt.xticks(ind, tuple(map(str, range(start, end + 1))))
 #     plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
 #     plt.legend(tuple(plot), tuple(plot2))
-#     # plt.show()
+    #  plt.show()
 #
