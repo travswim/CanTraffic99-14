@@ -1,0 +1,122 @@
+{
+  "C_WTHR":[
+    {
+      "1": "sunny",
+      "2": "cloudy",
+      "3": "rainy",
+      "4": "snowing",
+      "5": "sleet",
+      "6": "visibility",
+      "7": "windy",
+      "Q": "other",
+      "U": "unknown",
+      "X": "N/A"
+    }
+  ]
+}
+{
+  "V_TYPE":[
+    {
+      "01": "Ligth duty vehicle",
+      "05": "Panel/cargo van",
+      "06": "other tucks/vans <= 4536Kg GVWR",
+      "07": "Unit truck > 4536Kg GVWR",
+      "08": "Road tracktor",
+      "09": "School Bus",
+      "10": "Small school Bus",
+      "11": "Bus",
+      "14": "Motorcycle/Moped",
+      "16": "Off road vehicle",
+      "17": "Bicycle",
+      "18": "Purpose built motorhome",
+      "19": "Farm equipment",
+      "20": "Construction equipment",
+      "21": "Fire engine",
+      "22": "Snowmobile",
+      "23": "Street car",
+      "NN": "Not applicable",
+      "QQ": "other",
+      "UU": "unknown",
+      "XX": "N/A"
+    }
+  ]
+}
+{
+  "P_SEX":[
+    {
+      "F": "female",
+      "M": "male"
+    }
+  ]
+}
+{
+  "C_HOUR":[
+    {
+      "00": "midnight",
+      "01": "1am",
+      "02": "2am",
+      "03": "3am",
+      "04": "4am",
+      "05": "5am",
+      "06": "6am",
+      "07": "7am",
+      "08": "8am",
+      "09": "9am",
+      "10": "10am",
+      "11": "11am",
+      "12": "noon",
+      "13": "1pm",
+      "14": "2pm",
+      "15": "3pm",
+      "16": "4pm",
+      "17": "5pm",
+      "18": "6pm",
+      "19": "7pm",
+      "20": "8pm",
+      "21": "9pm",
+      "22": "10pm",
+      "23": "11pm",
+      "UU": "Unknown",
+      "XX": "N/A"
+    }
+  ]
+}
+{
+  "C_MNTH":[
+    {
+      "01": "January",
+      "02": "February",
+      "03": "March",
+      "04": "April",
+      "05": "May",
+      "06": "June",
+      "07": "July",
+      "08": "August",
+      "09": "September",
+      "10": "October",
+      "11": "November",
+      "12": "December",
+      "UU": "Unknown",
+      "XX": "N/A"
+    }
+  ]
+}
+{
+  "C_WDAY":[
+    {
+      "1": "Monday",
+      "2": "Tuesday",
+      "3": "Wednesday",
+      "4": "Thursday",
+      "5": "Friday",
+      "6": "Saturday",
+      "7": "Sunday",
+      "U": "Unknown",
+      "X": "N/A"
+
+    }
+  ]
+}
+{
+
+}

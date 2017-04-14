@@ -123,32 +123,38 @@ def day(x, d, year):
     return((df['C_YEAR'] == year)&(df['C_WDAY'] == h)).loc[(df['C_SEV'] == x)].sum()
 
 def pop_random(lst):
+    """ Pop a random item for a given list"""
     idx = random.randrange(0, len(lst) +1 )
     return lst.pop(idx)
 
 def rounder(num):
+    """ This function is sused to find the y-axis limit on the Stacked
+    bar plot """
     a = list(map(int,str(num)))
     x = math.pow(10, len(a)-1)
     return int((a[0]+1)*x)
 
 def plotfatal():
+    """ Stacked bar chart of fatal and Non-Fatal accidents in Canada"""
     fat = []
     nonfat = []
     max_feature = []
     year = 'C_YEAR'
+# For every year, calculate the number of fatalities/non-fatalities
     for item in df[year].unique():
         fat.append(fatal(1, item))
         nonfat.append(fatal(2, item))
+# Calculate the maximum value of fatal + Non-Fatal for any given year
     max_feature = [x + y for x, y in zip(fat, nonfat)]
-    # for item in df[feature].unique():
-    #     print item
+# Calculate percentage of fatalities
     percentage = map(float, np.array(fat))/(np.array(fat) + np.array(nonfat))*100
 
     print [round(elem, 2) for elem in percentage]
 
-    N = end - start + 1;
-    ind = np.arange(N)    # the x locations for the groups
+    N = end - start + 1;    # Year range
+    ind = np.arange(N)      # the x locations for the groups
     width = 0.50       # the width of the bars: can also be len(x) sequence
+# Plotting stuff
     p1 = plt.bar(ind, tuple(fat), width, color='r')
     p2 = plt.bar(ind, tuple(nonfat), width, color = 'y', bottom = fat)
     plt.ylabel('Number of accidents')
@@ -160,8 +166,11 @@ def plotfatal():
 # plotfatal()
 
 
-def plot():
+def plot(feature, legend, condition):
     feature = 'C_WTHR'
+    legend = {'1': 'sunny', '2': 'cloudy', '3': 'rainny', '4': 'snowing', \
+    '5': 'sleet', '6': 'visibility', '7': 'windy', 'Q': 'other', 'U': 'unknown',\
+    'X': 'N/A'}
     N = end - start + 1
     ind = np.arange(N)
     width = 0.5
@@ -172,9 +181,7 @@ def plot():
     condition = 'Weather'
     colours = ['r', 'b', 'k', 'w', 'm', 'g', 'c', 'y', 'yellow', 'aqua']
     random.shuffle(colours)
-    legend = {'1': 'sunny', '2': 'cloudy', '3': 'rainny', '4': 'snowing', \
-    '5': 'sleet', '6': 'visibility', '7': 'windy', 'Q': 'other', 'U': 'unknown',\
-    'X': 'N/A'}
+
     label = []
     val = []
     bottoms = []
@@ -183,36 +190,23 @@ def plot():
     k=0
     for key in legend.keys():
         pairs["{0}".format(key)] = colours.pop()
-    for item in df[feature].unique():
 
+    for item in df[feature].unique():
         bottoms.append(item)
-        # print bottoms[k]
-        # print item
         lst = []
+
         for year in range(start, end + 1):
             lst.append(weather(1, item, year))
+
         weatherItem["{0}".format(item)] = lst
-        # value.append(weatherItem[item])
         label.append(legend[item])
-        # print weatherItem[item]
-        # print max_feature
+
+        p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item], \
+            bottom = tuple(max_feature))
+
         max_feature = [x + y for x, y in zip(max_feature, list(weatherItem[item]))]
-        # print max_feature
-        if k == 0:
-
-            p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item])
-
-        else:
-            # print bottoms[x]
-            p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item], \
-
-            bottom = tuple(weatherItem[bottoms[k-1]]))
-            # print bottoms[k]
-            # print bottoms[k-1]
-
         val.append(p["p{0}".format(k)])
         k += 1
-        # print k
 
     newDF = pd.DataFrame(weatherItem)
     years = range(start, end + 1)
@@ -226,56 +220,12 @@ def plot():
 
     newDF['Total'] = newDF.sum(axis=1)
     newDF['Year'] = years
-    # print p
-    # print newDF
+    print newDF
+
     plt.ylabel('Number of accidents')
     plt.title("Canadian Fatal Vehicle Accidents by Year due to {0}".format(condition))
     plt.xticks(ind, tuple(map(str, range(start, end + 1))))
-    # plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
     plt.yticks(np.arange(0, rounder(max(newDF['Total'])), rounder(max(newDF['Total']))/10))
     plt.legend(tuple(val), tuple(label), loc='center left', bbox_to_anchor=(1, 0.5))
-    # print tuple(list(value)
-    # print tuple(label)
-
     plt.show()
 plot()
-# def plotweather(feature, variable, start, end):
-#     colours = ['r', 'b', 'k', 'w', 'm', 'g', 'c', 'y', 'yellow', 'aqua']
-#     legend = {'1': 'sunny', '2': 'cloudy', '3': 'rainny', '4': 'snowing', \
-#     '5': 'sleet', '6': 'visibility', '7': 'windy', 'Q': 'other', 'U': 'unknown',\
-#      'X': 'N/A'}
-#     N = end - start + 1;
-#     pairs = {}
-#     l = len(legend)
-#     ind = np.arange(N)    # the x locations for the groups
-#     width = 0.50
-#     # max_feature = [0]*(N)
-#     plot = []
-#     plot2 = []
-#     weatherItem = {}
-#     p = {}
-#     for key, value in legend.items():
-#         pairs["{0}".format(key)] = colours.pop()
-#
-#     for item in df.feature.unique():
-#         lst = []
-#         p = []
-#         for year in range(start, end + 1):
-#             weatherItem["weather_{0}".format(item)] = lst.append(weather(1, item, year))
-#             p["p{0}".format(item)].append(ind, tuple("list{0}".format(item)), width, color = pairs[item])
-#             plot.append("p{0}[0]".format(item))
-#             plot2.append(legend[item])
-#         # max_feature = [x + y for x, y in zip(max_feature, "list{0}".format(item)]
-#         print "list{0}".format(item)
-#
-#
-#
-#            # the width of the bars: can also be len(x) sequence
-#     # p1 = plt.bar(ind, tuple(fat), width, color='r')
-#     plt.ylabel('Number of accidents')
-#     plt.title("Canadian Fatal Vehicle Accidents by Year due to {0}".format(variable))
-#     plt.xticks(ind, tuple(map(str, range(start, end + 1))))
-#     plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
-#     plt.legend(tuple(plot), tuple(plot2))
-    #  plt.show()
-#
