@@ -10,14 +10,15 @@ import numpy as np
 import pandas as pd
 import random
 import matplotlib.pyplot as plt
+from matplotlib import colors as mcolors
 import matplotlib.patches as mpatches
 import timing
 import math
 from itertools import product
 # import os.path
 import pickle
-
-
+import json
+from functools import partial
 # if os.path.isfile('cantraffic.pk1') is False:
 #     df = pd.read_csv("NCDB_1999_to_2014.csv")
 #     df.to_pickle('cantraffic.pk1')
@@ -109,7 +110,7 @@ def month(x, m, year):
             UU, unknown
             XX, Not available"""
 
-    return((df['C_YEAR'] == year)&(df['C_MNTH'] == h)).loc[(df['C_SEV'] == x)].sum()
+    return((df['C_YEAR'] == year)&(df['C_MNTH'] == m)).loc[(df['C_SEV'] == x)].sum()
 
 def day(x, d, year):
     """ day(int, string, int)
@@ -120,7 +121,7 @@ def day(x, d, year):
             U, unknown
             X, Not available"""
 
-    return((df['C_YEAR'] == year)&(df['C_WDAY'] == h)).loc[(df['C_SEV'] == x)].sum()
+    return((df['C_YEAR'] == year)&(df['C_WDAY'] == d)).loc[(df['C_SEV'] == x)].sum()
 
 def pop_random(lst):
     """ Pop a random item for a given list"""
@@ -140,13 +141,13 @@ def plotfatal():
     nonfat = []
     max_feature = []
     year = 'C_YEAR'
-# For every year, calculate the number of fatalities/non-fatalities
+    # For every year, calculate the number of fatalities/non-fatalities
     for item in df[year].unique():
         fat.append(fatal(1, item))
         nonfat.append(fatal(2, item))
-# Calculate the maximum value of fatal + Non-Fatal for any given year
+        # Calculate the maximum value of fatal + Non-Fatal for any given year
     max_feature = [x + y for x, y in zip(fat, nonfat)]
-# Calculate percentage of fatalities
+    # Calculate percentage of fatalities
     percentage = map(float, np.array(fat))/(np.array(fat) + np.array(nonfat))*100
 
     print [round(elem, 2) for elem in percentage]
@@ -154,7 +155,7 @@ def plotfatal():
     N = end - start + 1;    # Year range
     ind = np.arange(N)      # the x locations for the groups
     width = 0.50       # the width of the bars: can also be len(x) sequence
-# Plotting stuff
+    # Plotting stuff
     p1 = plt.bar(ind, tuple(fat), width, color='r')
     p2 = plt.bar(ind, tuple(nonfat), width, color = 'y', bottom = fat)
     plt.ylabel('Number of accidents')
@@ -163,56 +164,78 @@ def plotfatal():
     plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
     plt.legend((p1, p2), ('Fatal', 'Non-Fatal'))
     plt.show()
-# plotfatal()
 
 
-def plot(feature, legend, condition):
-    feature = 'C_WTHR'
-    legend = {'1': 'sunny', '2': 'cloudy', '3': 'rainny', '4': 'snowing', \
-    '5': 'sleet', '6': 'visibility', '7': 'windy', 'Q': 'other', 'U': 'unknown',\
-    'X': 'N/A'}
-    N = end - start + 1
+
+def plot(feature):
+    # Setup Variables, Lists, & Dictionaries for plots
+    N = end - start + 1 # Year range
     ind = np.arange(N)
     width = 0.5
     weatherItem = {}
     pairs = {}
     percentage = {}
     p = {}
-    condition = 'Weather'
-    colours = ['r', 'b', 'k', 'w', 'm', 'g', 'c', 'y', 'yellow', 'aqua']
-    random.shuffle(colours)
-
+    colours =[]
     label = []
     val = []
     bottoms = []
     max_feature = [0] * N
-
     k=0
-    for key in legend.keys():
-        pairs["{0}".format(key)] = colours.pop()
 
+    yaxis = {'C_WTHR': 'Weather', 'V_TYPE': 'Vehicle Type', 'P_SEX': 'Sex', \
+    'C_HOUR': 'Hour of the Day', 'C_MNTH': 'Month of the Year', \
+    'C_WDAY': 'Day of the Week'}
+
+    # Color randomiation for plots
+    for name, hex in mcolors.cnames.iteritems():
+        colours.append(name)
+    random.shuffle(colours)
+
+    # Read .json file/legend
+    with open('weather.json') as data:
+        dt = json.load(data)
+    its = dt['ITEMS'][feature]
+
+    # Match item variable with a color for plot
+    for item in its:
+        pairs["{0}".format(item)] = colours.pop()
+
+    # Create list of fatalities for a given year & item
     for item in df[feature].unique():
-        bottoms.append(item)
-        lst = []
+        bottoms.append(item)    # List of items for legend
+        lst = []                # Fatalities list per item, per year
 
         for year in range(start, end + 1):
-            lst.append(weather(1, item, year))
+            # Legend for the above function calculations
+            legend = {'C_WTHR': partial(weather, 1, item, year),\
+                    'V_TYPE': partial(vtype, 1, item, year), \
+                    'P_SEX': partial(sex, 1, item, year),\
+                    'C_HOUR': partial(night, 1, item, year), \
+                    'C_MNTH': partial(month, 1, item, year), \
+                    'C_WDAY': partial(day, 1, item, year)}
+            lst.append(legend[feature]())
 
+        # Store in dictionary based on item
         weatherItem["{0}".format(item)] = lst
-        label.append(legend[item])
+        label.append(its[item])
 
+        # Create plot variables 'p':
         p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item], \
             bottom = tuple(max_feature))
 
+        # Keep track of the total fatalities for a given year
         max_feature = [x + y for x, y in zip(max_feature, list(weatherItem[item]))]
+        # Store plot variables for later
         val.append(p["p{0}".format(k)])
-        k += 1
+        k += 1  # Incrementor
 
+    # Create new DataFrame for more visualization/comparison
     newDF = pd.DataFrame(weatherItem)
     years = range(start, end + 1)
     headers = list(newDF.columns.values)
 
-    for key, value in legend.items():
+    for key, value in its.items():
         for header in headers:
             if key == header:
                 newDF.rename(columns={key:value}, inplace=True)
@@ -222,10 +245,13 @@ def plot(feature, legend, condition):
     newDF['Year'] = years
     print newDF
 
+    # Plot labels
     plt.ylabel('Number of accidents')
-    plt.title("Canadian Fatal Vehicle Accidents by Year due to {0}".format(condition))
+    plt.xlabel('Year')
+    plt.title("Canadian Fatal Vehicle Accidents by Year: {0}".format(yaxis[feature]))
     plt.xticks(ind, tuple(map(str, range(start, end + 1))))
     plt.yticks(np.arange(0, rounder(max(newDF['Total'])), rounder(max(newDF['Total']))/10))
     plt.legend(tuple(val), tuple(label), loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
-plot()
+# plot('C_WTHR')
+plot('C_WTHR')
