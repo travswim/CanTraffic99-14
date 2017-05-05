@@ -26,6 +26,14 @@ from functools import partial
 #     df = pd.read_pickle('cantraffic.pk1')
 # Read in .csv file
 df = pd.read_csv("NCDB_1999_to_2014.csv")
+# feature = 'C_WDAY'
+# r = 0
+# for item in df[feature]:
+#     if type(item) is not str:
+#         df.set_value(r, feature, str(item))
+#     else: continue
+#     r+=1
+
 start = 1999
 end = 2014
 
@@ -129,7 +137,7 @@ def pop_random(lst):
     return lst.pop(idx)
 
 def rounder(num):
-    """ This function is sused to find the y-axis limit on the Stacked
+    """ This function is used to find the y-axis limit on the stacked
     bar plot """
     a = list(map(int,str(num)))
     x = math.pow(10, len(a)-1)
@@ -179,9 +187,9 @@ def plot(feature):
     colours =[]
     label = []
     val = []
+    items = []
     bottoms = []
     max_feature = [0] * N
-    k=0
 
     yaxis = {'C_WTHR': 'Weather', 'V_TYPE': 'Vehicle Type', 'P_SEX': 'Sex', \
     'C_HOUR': 'Hour of the Day', 'C_MNTH': 'Month of the Year', \
@@ -201,8 +209,16 @@ def plot(feature):
     for item in its:
         pairs["{0}".format(item)] = colours.pop()
 
+    #   Cleanup dataframe entries that are of the wrong type or are not properly
+    # labeled. Ex. '1' --> '01'
+    df1 = df[feature].apply(str)
+    if feature == 'C_MNTH':
+        for item in df1.unique():
+            if len(item) < 2:
+                    df1 = df1.replace([item], '0' + item)
+            else: continue
     # Create list of fatalities for a given year & item
-    for item in df[feature].unique():
+    for item in df1.unique():
         bottoms.append(item)    # List of items for legend
         lst = []                # Fatalities list per item, per year
 
@@ -221,20 +237,20 @@ def plot(feature):
         label.append(its[item])
 
         # Create plot variables 'p':
-        p["p{0}".format(k)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item], \
+        p["p{0}".format(item)] = plt.bar(ind, tuple(weatherItem[item]), width, color = pairs[item], \
             bottom = tuple(max_feature))
 
         # Keep track of the total fatalities for a given year
         max_feature = [x + y for x, y in zip(max_feature, list(weatherItem[item]))]
         # Store plot variables for later
-        val.append(p["p{0}".format(k)])
-        k += 1  # Incrementor
+        val.append(p["p{0}".format(item)])
 
     # Create new DataFrame for more visualization/comparison
     newDF = pd.DataFrame(weatherItem)
     years = range(start, end + 1)
     headers = list(newDF.columns.values)
 
+    # Rename column headers with names instead of numbers
     for key, value in its.items():
         for header in headers:
             if key == header:
@@ -253,5 +269,5 @@ def plot(feature):
     plt.yticks(np.arange(0, rounder(max(newDF['Total'])), rounder(max(newDF['Total']))/10))
     plt.legend(tuple(val), tuple(label), loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
-# plot('C_WTHR')
-plot('C_WTHR')
+# Call plot function
+plot('C_MNTH')
