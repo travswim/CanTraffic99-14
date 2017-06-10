@@ -270,4 +270,4 @@ def plot(feature):
     plt.legend(tuple(val), tuple(label), loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 # Call plot function
-plot('C_MNTH')
+plot('P_SEX')
