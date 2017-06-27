@@ -1,13 +1,20 @@
 """ Machine learning file for Canadian Traffic Data 1999-2014"""
 #Import stuff
-from sklearn import tree
-import numpy as np
+# from sklearn import tree
+# from sklearn import cross_validation
+# from sklearn.preprocessing import OneHotEncoder, LabelEncoder
+# import numpy as np
+from time import time
+from tqdm import *
 import pandas as pd
-import re
-# import cantraffic as ct
+import random
 
+filename = "NCDB_1999_to_2014.csv"
+n = sum(1 for line in open(filename)) - 1 #number of records in file (excludes header)
+s = 100000 #desired sample size
+skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
 #Read the data file (csv)
-df = pd.read_csv("NCDB_1999_to_2014.csv")
+df = pd.read_csv(filename, skiprows=skip)
 
 print "Data read successfully"
 
@@ -56,7 +63,12 @@ def most_common(lst):
 def is_null(feature):
     df[feature] = df[feature].replace('nan', most_common(list(df[feature])))
     df[feature] = df[feature].replace('', most_common(list(df[feature])))
-
+    df[feature] = df[feature].replace('U', most_common(list(df[feature])))
+    df[feature] = df[feature].replace('UU', most_common(list(df[feature])))
+    df[feature] = df[feature].replace('X', most_common(list(df[feature])))
+    df[feature] = df[feature].replace('XX', most_common(list(df[feature])))
+    df[feature] = df[feature].replace('Q', most_common(list(df[feature])))
+    df[feature] = df[feature].replace('QQ', most_common(list(df[feature])))
 # Find the data type of an item
 def data_type(feature):
     # for feature in feature_cols:
@@ -89,7 +101,9 @@ def length(feature):
 variable_count = 0
 
 # This section calls various functions above and adds '0' to '1'
-for feature in feature_cols:
+pbar = tqdm(feature_cols)
+for feature in tqdm(feature_cols):
+    pbar.set_description("Processing %s" % feature)
     # print feature
     # data(feature)
     not_string(feature)
@@ -100,10 +114,32 @@ for feature in feature_cols:
             if len(item) == 1:
                 df[feature] = df[feature].replace(item, "0" + item)
 
-# Count the number of unique items to deal with preprocessing, PCA and the curse of dimensionality
-    variable_count += len(list(df[feature].unique()))
-print "Featire Space: {0}".format(variable_count)
-print "Data length: {0}".format(total_accidents)
+    # Count the number of unique items to deal with preprocessing, PCA and the curse of dimensionality
+    # variable_count += len(list(df[feature].unique()))
+def preprocess_features(X):
+    ''' Preprocesses the student data and converts non-numeric binary variables into
+        binary (0/1) variables. Converts categorical variables into dummy variables. '''
+    
+    # Initialize new output DataFrame
+    output = pd.DataFrame(index = X.index)
+
+    # Investigate each feature column for the data
+    for col, col_data in X.iteritems():
+        
+        # If data type is non-numeric, replace all yes/no values with 1/0
+        if col_data.dtype == object:
+            col_data = col_data.replace(['F', 'M'], [1, 0])
+            
+        # If data type is categorical, convert to dummy variables
+        if col_data.dtype == object:
+            # Example: 'school' => 'school_GP' and 'school_MS'
+            col_data = pd.get_dummies(col_data, prefix = col)  
+        
+        # Collect the revised columns
+        output = output.join(col_data)
+    
+    return output
+
 # We have enough data points to work with
 
 # Separate the data into feature data and target data (X_all and y_all, respectively)
@@ -114,5 +150,74 @@ try:
     # print "Features: {}".format(feature_cols)
 
     print "Successfully separated features and target"
+    print X_all.shape
 except:
-    print "Failed to separate features and target"
+    print "Failed to separate features and target\n"
+
+# One Hot Enoncode Categorial Data using Numpies:
+print "\n"
+for item in tqdm(y_all.unique()):
+    y_all = y_all.replace(2, 0)
+X_all = preprocess_features(X_all)
+# print "Processed feature columns ({} total features):\n{}".format(len(X_all.columns), list(X_all.columns))
+
+
+# Lets see if it worked
+# print X_all.shape
+# print X_all.head(10)
+# print y_all.shape
+# print y_all.head(10)
+
+#Success!!
+
+# Cross Validation:
+from sklearn import cross_validation
+from sklearn.metrics import f1_score
+
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(X_all, y_all, stratify=y_all, 
+                                                    test_size=0.24, random_state=42)
+print "\n"
+print "Train set 'fatal' pct = {:.2f}%".format(100 * (y_train == 1).mean())
+print "Test  set 'nonfatal' pct = {:.2f}%".format(100 * (y_test == 0).mean())
+# Show the results of the split
+print "Training set has {} samples.".format(X_train.shape[0])
+print "Testing set has {} samples.".format(X_test.shape[0])
+
+def train_classifier(clf, X_train, y_train):
+    ''' Fits a classifier to the training data. '''
+    
+    # Start the clock, train the classifier, then stop the clock
+    start = time()
+    clf.fit_transform(X_train, y_train)
+    end = time()
+    
+    # Print the results
+    print "Trained model in {:.4f} seconds".format(end - start)
+
+    
+def predict_labels(clf, features, target):
+    ''' Makes predictions using a fit classifier based on F1 score. '''
+    
+    # Start the clock, make predictions, then stop the clock
+    start = time()
+    y_pred = clf.predict(features)
+    end = time()
+    
+    # Print and return results
+    print "Made predictions in {:.4f} seconds.".format(end - start)
+    return f1_score(target.values, y_pred, pos_label='yes')
+
+
+def train_predict(clf, X_train, y_train, X_test, y_test):
+    ''' Train and predict using a classifer based on F1 score. '''
+    
+    # Indicate the classifier and the training set size
+    print "Training a {} using a training set size of {}. . .".format(clf.__class__.__name__, len(X_train))
+    
+    # Train the classifier
+    train_classifier(clf, X_train, y_train)
+    
+    # Print the results of prediction for both training and testing
+    print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train))
+    print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test))
+
