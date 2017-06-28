@@ -248,20 +248,27 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
 # Import classifiers:
 # TODO: Import the three supervised learning models from sklearn
 from sklearn.naive_bayes import GaussianNB
-from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
+from sklearn.tree import DecisionTreeClassifier
 
 # TODO: Initialize the three models
 clf_A = GaussianNB()
-# clf_B = SVC(random_state = 30)
+clf_B = DecisionTreeClassifier()
 clf_C = LogisticRegression(random_state = 30)
 clf_D = SGDClassifier(shuffle=True, learning_rate="optimal", penalty='l2', random_state=42)
 
 
 # TODO: Execute the 'train_predict' function for each classifier and each training set size
 # train_predict(clf, X_train, y_train, X_test, y_test)
-for clf in [clf_A, clf_C, clf_D]:
+for clf in [clf_A, clf_B, clf_C, clf_D]:
     print "\n{}: \n".format(clf.__class__.__name__)
     train_predict(clf, X_train, y_train, X_test, y_test)
-    
+
+# So it woked. Not bad results:
+# GaussianNB:           f1 = 0.6097
+# DecisionTree:         f1 = 0.7711
+# LogisticRegression:   f1 = 0.7780
+# SGDClassifier:        f1 = 0.7795
+
+# Now we need to do some tuning
