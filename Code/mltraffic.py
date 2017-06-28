@@ -4,17 +4,36 @@
 # from sklearn import cross_validation
 # from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 # import numpy as np
+import progressbar
 from time import time
 from tqdm import *
 import pandas as pd
 import random
+def readFile(filename):
+    df = pd.read_csv(filename)
+    # Numbers
+    fatal = (df['C_SEV'] == 1).sum()
+    nonFatal = (df['C_SEV'] == 2).sum()
 
+    # Dataframes
+    dfatal = df.loc[df['C_SEV'] == 1]
+    dfnonfatal = df.loc[df['C_SEV'] == 2]
+
+    # Randomly sample % of your dataframe
+    df_sample_nonfatal = dfnonfatal.sample(frac=0.02)
+    print(len(df_sample_nonfatal))
+    frames = [dfatal, df_sample_nonfatal]
+    result = pd.concat(frames)
+    return result.sample(frac=1)
+
+# filename = "NCDB_1999_to_2014.csv"
+# n = sum(1 for line in open(filename)) - 1 #number of records in file (excludes header)
+# s = 100000 #desired sample size
+# skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
+# #Read the data file (csv)
+# df = pd.read_csv(filename, skiprows=skip)
 filename = "NCDB_1999_to_2014.csv"
-n = sum(1 for line in open(filename)) - 1 #number of records in file (excludes header)
-s = 100000 #desired sample size
-skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
-#Read the data file (csv)
-df = pd.read_csv(filename, skiprows=skip)
+df = readFile(filename)
 
 print "Data read successfully"
 
@@ -29,6 +48,7 @@ print "Total number of fatalities: {}".format(fatal)
 print "Total number of non-fatalities: {}".format(nonFatal)
 
 print "Total number of Accidents: {}".format(total_accidents)
+raw_input("Press Enter to continue...")
 del fatal, nonFatal
 #Find the feature columns
 feature_cols = list(df.drop('C_SEV', 1))
@@ -183,12 +203,15 @@ print "Test  set 'fatal' pct = {:.2f}%".format(100 * (y_test == 1).mean())
 print "Training set has {} samples.".format(X_train.shape[0])
 print "Testing set has {} samples.".format(X_test.shape[0])
 
+bar = progressbar.ProgressBar(maxval=20, \
+    widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+
 def train_classifier(clf, X_train, y_train):
     ''' Fits a classifier to the training data. '''
     
     # Start the clock, train the classifier, then stop the clock
     start = time()
-    clf.fit_transform(X_train, y_train)
+    clf.fit(X_train, y_train)
     end = time()
     
     # Print the results
@@ -199,18 +222,19 @@ def predict_labels(clf, features, target):
     ''' Makes predictions using a fit classifier based on F1 score. '''
     
     # Start the clock, make predictions, then stop the clock
+    bar.start()
     start = time()
     y_pred = clf.predict(features)
     end = time()
+    bar.finish()
     
     # Print and return results
     print "Made predictions in {:.4f} seconds.".format(end - start)
-    return f1_score(target.values, y_pred, pos_label='yes')
+    return f1_score(target.values, y_pred, pos_label=1)
 
 
 def train_predict(clf, X_train, y_train, X_test, y_test):
     ''' Train and predict using a classifer based on F1 score. '''
-    
     # Indicate the classifier and the training set size
     print "Training a {} using a training set size of {}. . .".format(clf.__class__.__name__, len(X_train))
     
@@ -220,7 +244,6 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
     # Print the results of prediction for both training and testing
     print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train))
     print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test))
-
 # Now we need some classifiers, using the scikit-learn algorithm cheat-shee:
 # Import classifiers:
 # TODO: Import the three supervised learning models from sklearn
@@ -231,13 +254,14 @@ from sklearn.linear_model import SGDClassifier
 
 # TODO: Initialize the three models
 clf_A = GaussianNB()
-clf_B = SVC(random_state = 30)
+# clf_B = SVC(random_state = 30)
 clf_C = LogisticRegression(random_state = 30)
 clf_D = SGDClassifier(shuffle=True, learning_rate="optimal", penalty='l2', random_state=42)
 
 
 # TODO: Execute the 'train_predict' function for each classifier and each training set size
 # train_predict(clf, X_train, y_train, X_test, y_test)
-for clf in [clf_A, clf_B, clf_C, clf_D]:
+for clf in [clf_A, clf_C, clf_D]:
     print "\n{}: \n".format(clf.__class__.__name__)
     train_predict(clf, X_train, y_train, X_test, y_test)
+    
