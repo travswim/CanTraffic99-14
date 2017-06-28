@@ -178,7 +178,7 @@ X_train, X_test, y_train, y_test = cross_validation.train_test_split(X_all, y_al
                                                     test_size=0.24, random_state=42)
 print "\n"
 print "Train set 'fatal' pct = {:.2f}%".format(100 * (y_train == 1).mean())
-print "Test  set 'nonfatal' pct = {:.2f}%".format(100 * (y_test == 0).mean())
+print "Test  set 'fatal' pct = {:.2f}%".format(100 * (y_test == 1).mean())
 # Show the results of the split
 print "Training set has {} samples.".format(X_train.shape[0])
 print "Testing set has {} samples.".format(X_test.shape[0])
@@ -221,3 +221,23 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
     print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train))
     print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test))
 
+# Now we need some classifiers, using the scikit-learn algorithm cheat-shee:
+# Import classifiers:
+# TODO: Import the three supervised learning models from sklearn
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import SGDClassifier
+
+# TODO: Initialize the three models
+clf_A = GaussianNB()
+clf_B = SVC(random_state = 30)
+clf_C = LogisticRegression(random_state = 30)
+clf_D = SGDClassifier(shuffle=True, learning_rate="optimal", penalty='l2', random_state=42)
+
+
+# TODO: Execute the 'train_predict' function for each classifier and each training set size
+# train_predict(clf, X_train, y_train, X_test, y_test)
+for clf in [clf_A, clf_B, clf_C, clf_D]:
+    print "\n{}: \n".format(clf.__class__.__name__)
+    train_predict(clf, X_train, y_train, X_test, y_test)
