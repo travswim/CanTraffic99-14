@@ -48,7 +48,7 @@ print "Total number of fatalities: {}".format(fatal)
 print "Total number of non-fatalities: {}".format(nonFatal)
 
 print "Total number of Accidents: {}".format(total_accidents)
-raw_input("Press Enter to continue...")
+# raw_input("Press Enter to continue...")
 del fatal, nonFatal
 #Find the feature columns
 feature_cols = list(df.drop('C_SEV', 1))
@@ -174,13 +174,20 @@ try:
 except:
     print "Failed to separate features and target\n"
 
+del df
 # One Hot Enoncode Categorial Data using Numpies:
-print "\n"
+
 for item in tqdm(y_all.unique()):
     y_all = y_all.replace(2, 0)
 X_all = preprocess_features(X_all)
+# from sklearn.preprocessing import OneHotEncoder
+# enc = OneHotEncoder()
+# X_all = enc.fit(X_all)
+# X_all = enc.transform(X_all)
 # print "Processed feature columns ({} total features):\n{}".format(len(X_all.columns), list(X_all.columns))
-
+from sklearn.decomposition import PCA
+pca = PCA(n_components=3)
+X_pca = pca.fit_transform(X)
 
 # Lets see if it worked
 # print X_all.shape
