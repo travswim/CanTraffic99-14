@@ -180,26 +180,16 @@ del df
 for item in tqdm(y_all.unique()):
     y_all = y_all.replace(2, 0)
 X_all = preprocess_features(X_all)
-# from sklearn.preprocessing import OneHotEncoder
-# enc = OneHotEncoder()
-# X_all = enc.fit(X_all)
-# X_all = enc.transform(X_all)
-# print "Processed feature columns ({} total features):\n{}".format(len(X_all.columns), list(X_all.columns))
-from sklearn.decomposition import PCA
-pca = PCA(n_components=3)
-X_pca = pca.fit_transform(X)
-
-# Lets see if it worked
-# print X_all.shape
-# print X_all.head(10)
-# print y_all.shape
-# print y_all.head(10)
+print("Data shape: ", X_all.shape)
 
 #Success!!
 
 # Cross Validation:
 from sklearn import cross_validation
+# Scoring Metrics
 from sklearn.metrics import f1_score
+from sklearn.metrics import matthews_corrcoef
+from sklearn.metrics import accuracy_score
 
 X_train, X_test, y_train, y_test = cross_validation.train_test_split(X_all, y_all, stratify=y_all, 
                                                     test_size=0.24, random_state=42)
@@ -237,7 +227,7 @@ def predict_labels(clf, features, target):
     
     # Print and return results
     print "Made predictions in {:.4f} seconds.".format(end - start)
-    return f1_score(target.values, y_pred, pos_label=1)
+    return [f1_score(target.values, y_pred, pos_label=1), accuracy_score(target.values, y_pred), matthews_corrcoef(target.values, y_pred)]
 
 
 def train_predict(clf, X_train, y_train, X_test, y_test):
@@ -249,8 +239,10 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
     train_classifier(clf, X_train, y_train)
     
     # Print the results of prediction for both training and testing
-    print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train))
-    print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test))
+    print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train)[0])
+    print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[0])
+    print "Accuracy score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[1])
+    print "Matthews CC for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[2])
 # Now we need some classifiers, using the scikit-learn algorithm cheat-shee:
 # Import classifiers:
 # TODO: Import the three supervised learning models from sklearn
@@ -278,4 +270,13 @@ for clf in [clf_A, clf_B, clf_C, clf_D]:
 # LogisticRegression:   f1 = 0.7780
 # SGDClassifier:        f1 = 0.7795
 
-# Now we need to do some tuning
+# Now we need to do some PCA
+def doPCA(data):
+    from sklearn.decomposition import PCA
+    pca = PCA()
+    pca.fit(data)
+    return pca.explained_variance_ratio_
+print("Explained Varience: ")
+print(doPCA(X_all))
+
+# Do logistic regresssion, pca, gridsearchcv, and call it a day
