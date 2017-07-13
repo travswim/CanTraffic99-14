@@ -1,14 +1,12 @@
 """ Machine learning file for Canadian Traffic Data 1999-2014"""
 #Import stuff
-# from sklearn import tree
-# from sklearn import cross_validation
-# from sklearn.preprocessing import OneHotEncoder, LabelEncoder
-# import numpy as np
+
 import progressbar
 from time import time
 from tqdm import *
 import pandas as pd
 import random
+import numpy as np
 def readFile(filename):
     df = pd.read_csv(filename)
     # Numbers
@@ -227,7 +225,8 @@ def predict_labels(clf, features, target):
     
     # Print and return results
     print "Made predictions in {:.4f} seconds.".format(end - start)
-    return [f1_score(target.values, y_pred, pos_label=1), accuracy_score(target.values, y_pred), matthews_corrcoef(target.values, y_pred)]
+    return f1_score(target.values, y_pred, pos_label=1)
+# , accuracy_score(target.values, y_pred), matthews_corrcoef(target.values, y_pred)]
 
 
 def train_predict(clf, X_train, y_train, X_test, y_test):
@@ -239,10 +238,10 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
     train_classifier(clf, X_train, y_train)
     
     # Print the results of prediction for both training and testing
-    print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train)[0])
-    print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[0])
-    print "Accuracy score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[1])
-    print "Matthews CC for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[2])
+    print "F1 score for training set: {:.4f}.".format(predict_labels(clf, X_train, y_train))
+    print "F1 score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test))
+    # print "Accuracy score for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[1])
+    # print "Matthews CC for test set: {:.4f}.".format(predict_labels(clf, X_test, y_test)[2])
 # Now we need some classifiers, using the scikit-learn algorithm cheat-shee:
 # Import classifiers:
 # TODO: Import the three supervised learning models from sklearn
@@ -271,12 +270,48 @@ for clf in [clf_A, clf_B, clf_C, clf_D]:
 # SGDClassifier:        f1 = 0.7795
 
 # Now we need to do some PCA
-def doPCA(data):
-    from sklearn.decomposition import PCA
-    pca = PCA()
-    pca.fit(data)
-    return pca.explained_variance_ratio_
-print("Explained Varience: ")
-print(doPCA(X_all))
+# def doPCA(data):
+#     from sklearn.decomposition import PCA
+#     pca = PCA(n_components=400)
+#     pca.fit(data)
+#     return pca.explained_variance_ratio_
+# print("Explained Varience: ")
+# print(doPCA(X_all))
 
 # Do logistic regresssion, pca, gridsearchcv, and call it a day
+# TODO: Import 'GridSearchCV' and 'make_scorer'
+from sklearn.grid_search import GridSearchCV
+from sklearn.metrics import make_scorer
+from sklearn.cross_validation import StratifiedShuffleSplit
+from sklearn.metrics import f1_score
+from sklearn.preprocessing import normalize
+
+
+parameters = {
+    'C': np.logspace(-4,4,17),
+    'penalty':['l1', 'l2'],
+    'class_weight':[None, 'balanced'],
+    }
+scv = StratifiedShuffleSplit(y_train, test_size=0.25)
+
+# Initialize the classifier
+clf = LogisticRegression(random_state=30)
+
+# Make an f1 scoring function using 'make_scorer' 
+f1_scorer = make_scorer(f1_score, pos_label=1)
+
+# TODO: Perform grid search on the classifier using the f1_scorer as the scoring method
+#grid_obj = GridSearchCV(clf, parameters, cv=scv, scoring=f1_scorer)
+grid_obj = GridSearchCV(clf, parameters, cv=scv,
+                        scoring=f1_scorer, verbose=1,
+                        n_jobs=-1, pre_dispatch='2*n_jobs')
+
+# TODO: Fit the grid search object to the training data and find the optimal parameters
+grid_obj = grid_obj.fit(X_train, y_train)
+
+# Get the estimator
+clf = grid_obj.best_estimator_
+
+# Report the final F1 score for training and testing after parameter tuning
+print "Tuned model has a training F1 score of {:.4f}.".format(predict_labels(clf, X_train, y_train))
+print "Tuned model has a testing F1 score of {:.4f}.".format(predict_labels(clf, X_test, y_test))
