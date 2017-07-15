@@ -182,6 +182,50 @@ print("Data shape: ", X_all.shape)
 
 #Success!!
 
+#PCA
+import matplotlib.pyplot as plt
+
+from sklearn import linear_model, decomposition, datasets
+from sklearn.pipeline import Pipeline
+from sklearn.grid_search import GridSearchCV
+from sklearn.linear_model import LogisticRegression
+logistic = linear_model.LogisticRegression()
+
+pca = decomposition.PCA()
+pipe = Pipeline(steps=[('pca', pca), ('logistic', logistic)])
+
+digits = datasets.load_digits()
+pca.fit(X_all)
+
+plt.figure(1, figsize=(4, 3))
+plt.clf()
+plt.axes([.2, .2, .7, .7])
+plt.plot(pca.explained_variance_, linewidth=2)
+plt.axis('tight')
+plt.xlabel('n_components')
+plt.ylabel('explained_variance_')
+
+raw_input("Press Enter to continue...")
+n_components = [100, 200, 300, 400]
+Cs = np.logspace(-4, 4, 3)
+
+
+estimator = GridSearchCV(pipe, dict(pca__n_components=n_components, logistic__C=Cs))
+
+print("Estimating number of components...")
+bar.start()
+estimator.fit(X_all, y_all)
+bar.end()
+
+plt.axvline(estimator.best_estimator_.named_steps['pca'].n_components,
+            linestyle=':', label='n_components chosen')
+plt.legend(prop=dict(size=12))
+plt.show()
+
+raw_input("Press Enter to continue...")
+
+
+
 # Cross Validation:
 from sklearn import cross_validation
 # Scoring Metrics
@@ -246,7 +290,6 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
 # Import classifiers:
 # TODO: Import the three supervised learning models from sklearn
 from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 
@@ -259,7 +302,8 @@ clf_D = SGDClassifier(shuffle=True, learning_rate="optimal", penalty='l2', rando
 
 # TODO: Execute the 'train_predict' function for each classifier and each training set size
 # train_predict(clf, X_train, y_train, X_test, y_test)
-for clf in [clf_A, clf_B, clf_C, clf_D]:
+# for clf in [clf_A, clf_B, clf_C, clf_D]:
+for clif in [clf_C]:
     print "\n{}: \n".format(clf.__class__.__name__)
     train_predict(clf, X_train, y_train, X_test, y_test)
 
@@ -280,7 +324,7 @@ for clf in [clf_A, clf_B, clf_C, clf_D]:
 
 # Do logistic regresssion, pca, gridsearchcv, and call it a day
 # TODO: Import 'GridSearchCV' and 'make_scorer'
-from sklearn.grid_search import GridSearchCV
+
 from sklearn.metrics import make_scorer
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.metrics import f1_score
@@ -288,7 +332,7 @@ from sklearn.preprocessing import normalize
 
 
 parameters = {
-    'C': np.logspace(-4,4,17),
+    'C': np.logspace(0,4,17),
     'penalty':['l1', 'l2'],
     'class_weight':[None, 'balanced'],
     }
