@@ -1,6 +1,5 @@
 """ Machine learning file for Canadian Traffic Data 1999-2014"""
 #Import stuff
-
 import progressbar
 from time import time
 from tqdm import *
@@ -18,9 +17,10 @@ def readFile(filename):
     dfnonfatal = df.loc[df['C_SEV'] == 2]
 
     # Randomly sample % of your dataframe
-    df_sample_nonfatal = dfnonfatal.sample(frac=0.02)
+    df_sample_fatal = dfatal.sample(frac=0.02)
+    df_sample_nonfatal = dfnonfatal.sample(frac=0.0004)
     print(len(df_sample_nonfatal))
-    frames = [dfatal, df_sample_nonfatal]
+    frames = [df_sample_fatal, df_sample_nonfatal]
     result = pd.concat(frames)
     return result.sample(frac=1)
 
@@ -189,6 +189,9 @@ from sklearn import linear_model, decomposition, datasets
 from sklearn.pipeline import Pipeline
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
+from sklearn.decomposition import PCA
+bar = progressbar.ProgressBar(maxval=20, \
+    widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
 logistic = linear_model.LogisticRegression()
 
 pca = decomposition.PCA()
@@ -206,21 +209,24 @@ plt.xlabel('n_components')
 plt.ylabel('explained_variance_')
 
 raw_input("Press Enter to continue...")
-n_components = [100, 200, 300, 400]
+n_components = [100, 200, 300]
 Cs = np.logspace(-4, 4, 3)
 
 
 estimator = GridSearchCV(pipe, dict(pca__n_components=n_components, logistic__C=Cs))
 
 print("Estimating number of components...")
-bar.start()
+# bar.start()
 estimator.fit(X_all, y_all)
-bar.end()
+# bar.end()
 
 plt.axvline(estimator.best_estimator_.named_steps['pca'].n_components,
             linestyle=':', label='n_components chosen')
 plt.legend(prop=dict(size=12))
 plt.show()
+ncomp = estimator.best_estimator_.named_steps['pca'].n_components
+pca = PCA(n_components=ncomp)
+X_all = pca.fit_transform(X_all)
 
 raw_input("Press Enter to continue...")
 
@@ -242,8 +248,7 @@ print "Test  set 'fatal' pct = {:.2f}%".format(100 * (y_test == 1).mean())
 print "Training set has {} samples.".format(X_train.shape[0])
 print "Testing set has {} samples.".format(X_test.shape[0])
 
-bar = progressbar.ProgressBar(maxval=20, \
-    widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+
 
 def train_classifier(clf, X_train, y_train):
     ''' Fits a classifier to the training data. '''
@@ -303,7 +308,7 @@ clf_D = SGDClassifier(shuffle=True, learning_rate="optimal", penalty='l2', rando
 # TODO: Execute the 'train_predict' function for each classifier and each training set size
 # train_predict(clf, X_train, y_train, X_test, y_test)
 # for clf in [clf_A, clf_B, clf_C, clf_D]:
-for clif in [clf_C]:
+for clf in [clf_C]:
     print "\n{}: \n".format(clf.__class__.__name__)
     train_predict(clf, X_train, y_train, X_test, y_test)
 

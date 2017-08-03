@@ -36,7 +36,9 @@ df = pd.read_csv("NCDB_1999_to_2014.csv")
 
 start = 1999
 end = 2014
-
+fatals = (df['C_SEV'] == 1).sum()
+nonFatal = (df['C_SEV'] == 2).sum()
+total_accidents = len(df['C_SEV'])
 def fatal(x, year):
     """ fatal(int, int)
 
@@ -173,9 +175,31 @@ def plotfatal():
     plt.legend((p1, p2), ('Fatal', 'Non-Fatal'))
     plt.show()
 
-
+def plotfatalalities():
+    fat = []
+    max_feature = []
+    year = 'C_YEAR'
+    for item in df[year].unique():
+        fat.append(fatal(1, item))
+    N = end - start + 1;    # Year range
+    ind = np.arange(N)      # the x locations for the groups
+    width = 0.50       # the width of the bars: can also be len(x) sequence
+    # Plotting stuff
+    p1 = plt.bar(ind, tuple(fat), width, color='r')
+    plt.ylabel('Number of fatalities')
+    plt.title('Canadian Fatal Vehicle Accidents by Year')
+    plt.xticks(ind, tuple(map(str, range(start, end + 1))))
+    plt.yticks(np.arange(0, rounder(max(fat)), rounder(max(fat))/10))
+    # plt.legend((p1, ), ('Fatal', 'Non-Fatal'))
+    plt.show()
 
 def plot(feature):
+    plt.ylabel('Number of fatalities')
+    plt.title('Canadian Fatal Vehicle Accidents by Year')
+    plt.xticks(ind, tuple(map(str, range(start, end + 1))))
+    plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
+    plt.legend((p1, p2), ('Fatal', 'Non-Fatal'))
+    plt.show()
     # Setup Variables, Lists, & Dictionaries for plots
     N = end - start + 1 # Year range
     ind = np.arange(N)
@@ -270,4 +294,11 @@ def plot(feature):
     plt.legend(tuple(val), tuple(label), loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 # Call plot function
-plot('P_SEX')
+# plot('P_SEX')
+# plot('C_WTHR')
+
+plotfatal()
+plotfatalalities()
+print("Total number of Accidents: " + str(total_accidents))
+print("Total fatalities: " + str(fatals))
+print("Total non-fatalities: " + str(nonFatal))
