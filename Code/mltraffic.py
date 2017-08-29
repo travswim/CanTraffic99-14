@@ -6,33 +6,33 @@ from tqdm import *
 import pandas as pd
 import random
 import numpy as np
+
 def readFile(filename):
     df = pd.read_csv(filename)
     # Numbers
     fatal = (df['C_SEV'] == 1).sum()
     nonFatal = (df['C_SEV'] == 2).sum()
-
+    total_accidents = len(df['C_SEV'])
     # Dataframes
     dfatal = df.loc[df['C_SEV'] == 1]
     dfnonfatal = df.loc[df['C_SEV'] == 2]
 
     # Randomly sample % of your dataframe
-    df_sample_fatal = dfatal.sample(frac=0.02)
-    df_sample_nonfatal = dfnonfatal.sample(frac=0.0004)
+    fatal_frac = 0.2
+    print("Using {}% of fatatalities".format(fatal_frac))
+    nonfatal_frac = fatal*fatal_frac/nonFatal
+
+    df_sample_fatal = dfatal.sample(frac=fatal_frac)
+    df_sample_nonfatal = dfnonfatal.sample(frac=nonfatal_frac)
     print(len(df_sample_nonfatal))
     frames = [df_sample_fatal, df_sample_nonfatal]
     result = pd.concat(frames)
     return result.sample(frac=1)
 
-# filename = "NCDB_1999_to_2014.csv"
-# n = sum(1 for line in open(filename)) - 1 #number of records in file (excludes header)
-# s = 100000 #desired sample size
-# skip = sorted(random.sample(xrange(1,n+1),n-s)) #the 0-indexed header will not be included in the skip list
-# #Read the data file (csv)
-# df = pd.read_csv(filename, skiprows=skip)
+
 filename = "NCDB_1999_to_2014.csv"
 df = readFile(filename)
-
+# df = pd.read_csv(filename)
 print "Data read successfully"
 
 #define the fatalities/non-fatalities
@@ -53,8 +53,8 @@ feature_cols = list(df.drop('C_SEV', 1))
 #Find the target columns
 target_col = 'C_SEV'
 #Print some more stuff
-# print "Feature columns:\n{}".format(feature_cols)
-# print "\nTarget column: {}".format(target_col)
+print "Feature columns:\n{}".format(feature_cols)
+print "\nTarget column: {}".format(target_col)
 
 
 
@@ -116,7 +116,6 @@ def length(feature):
 ## As we can see, not only is the data of mixed types (int and string, supposed
 ## to be stings) its also contains duplicates ('1' and '01 are equivalent') and 'nan'.
 
-variable_count = 0
 
 # This section calls various functions above and adds '0' to '1'
 pbar = tqdm(feature_cols)
@@ -132,8 +131,6 @@ for feature in tqdm(feature_cols):
             if len(item) == 1:
                 df[feature] = df[feature].replace(item, "0" + item)
 
-    # Count the number of unique items to deal with preprocessing, PCA and the curse of dimensionality
-    # variable_count += len(list(df[feature].unique()))
 def preprocess_features(X):
     ''' Preprocesses the student data and converts non-numeric binary variables into
         binary (0/1) variables. Converts categorical variables into dummy variables. '''
@@ -160,6 +157,11 @@ def preprocess_features(X):
 
 # We have enough data points to work with
 
+# Correlation matrix
+
+
+
+
 # Separate the data into feature data and target data (X_all and y_all, respectively)
 try:
     X_all = df[feature_cols]
@@ -173,73 +175,99 @@ except:
     print "Failed to separate features and target\n"
 
 del df
-# One Hot Enoncode Categorial Data using Numpies:
 
+# One Hot Enoncode Categorial Data using Numpies:
 for item in tqdm(y_all.unique()):
     y_all = y_all.replace(2, 0)
 X_all = preprocess_features(X_all)
+
 print("Data shape: ", X_all.shape)
-
+print X_all.head()
 #Success!!
-
-#PCA
 import matplotlib.pyplot as plt
 
-from sklearn import linear_model, decomposition, datasets
-from sklearn.pipeline import Pipeline
-from sklearn.grid_search import GridSearchCV
-from sklearn.linear_model import LogisticRegression
-from sklearn.decomposition import PCA
-bar = progressbar.ProgressBar(maxval=20, \
-    widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-logistic = linear_model.LogisticRegression()
+df = X_all.join(y_all)
+# def plot_corr(df, size=10):
+#     '''Function plots a graphical correlation matrix for each pair of columns in the dataframe.
 
-pca = decomposition.PCA()
-pipe = Pipeline(steps=[('pca', pca), ('logistic', logistic)])
+#     Input:
+#         df: pandas DataFrame
+#         size: vertical and horizontal size of the plot'''
 
-digits = datasets.load_digits()
-pca.fit(X_all)
+#     corr = df.corr()
+#     fig, ax = plt.subplots(figsize=(size, size))
+#     ax.matshow(corr)
+#     plt.xticks(range(len(corr.columns)), corr.columns)
+#     plt.yticks(range(len(corr.columns)), corr.columns)
+#     plt.show()
+# plot_corr(df)
+df_corr = df.corr().abs()
+# plt.matshow(df_corr)
 
-plt.figure(1, figsize=(4, 3))
-plt.clf()
-plt.axes([.2, .2, .7, .7])
-plt.plot(pca.explained_variance_, linewidth=2)
-plt.axis('tight')
-plt.xlabel('n_components')
-plt.ylabel('explained_variance_')
+print df_corr
 
-raw_input("Press Enter to continue...")
-n_components = [100, 200, 300]
-Cs = np.logspace(-4, 4, 3)
-
-
-estimator = GridSearchCV(pipe, dict(pca__n_components=n_components, logistic__C=Cs))
-
-print("Estimating number of components...")
-# bar.start()
-estimator.fit(X_all, y_all)
-# bar.end()
-
-plt.axvline(estimator.best_estimator_.named_steps['pca'].n_components,
-            linestyle=':', label='n_components chosen')
-plt.legend(prop=dict(size=12))
+s = df_corr.unstack()
+so = s.sort(kind="quicksort")
+df__corr = so[-4470:-4460]
+df_corr[['C_SEV']].plot(kind='bar')
 plt.show()
-ncomp = estimator.best_estimator_.named_steps['pca'].n_components
-pca = PCA(n_components=ncomp)
-X_all = pca.fit_transform(X_all)
-
 raw_input("Press Enter to continue...")
+# Progress bar for progress visualization
+bar = progressbar.ProgressBar(maxval=20, \
+        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+#PCA
+def doPCA(x):
+    
+    from sklearn import linear_model, decomposition, datasets
+    from sklearn.pipeline import Pipeline
+    from sklearn.decomposition import PCA
+    bar = progressbar.ProgressBar(maxval=20, \
+        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+    logistic = linear_model.LogisticRegression()
+
+    pca = decomposition.PCA()
+    pipe = Pipeline(steps=[('pca', pca), ('logistic', logistic)])
+
+    digits = datasets.load_digits()
+    pca.fit(X_all)
+
+    plt.figure(1, figsize=(4, 3))
+    plt.clf()
+    plt.axes([.2, .2, .7, .7])
+    plt.plot(pca.explained_variance_, linewidth=2)
+    plt.axis('tight')
+    plt.xlabel('n_components')
+    plt.ylabel('explained_variance_')
+
+    n_components = [100, 150, 200, 250, 300]
+    Cs = np.logspace(-4, 4, 3)
+
+
+    estimator = get_params(pipe, dict(pca__n_components=n_components, logistic__C=Cs))
+
+    print("Estimating number of components...")
+    bar.start()
+    estimator.fit(X_all, y_all)
+    bar.end()
+
+    plt.axvline(estimator.best_estimator_.named_steps['pca'].n_components,
+                linestyle=':', label='n_components chosen')
+    plt.legend(prop=dict(size=12))
+    plt.show()
+    ncomp = estimator.best_estimator_.named_steps['pca'].n_components
+    pca = PCA(n_components=ncomp)
+    X_all = pca.fit_transform(X_all)
+
 
 
 
 # Cross Validation:
-from sklearn import cross_validation
+from sklearn.model_selection import train_test_split
 # Scoring Metrics
 from sklearn.metrics import f1_score
-from sklearn.metrics import matthews_corrcoef
-from sklearn.metrics import accuracy_score
 
-X_train, X_test, y_train, y_test = cross_validation.train_test_split(X_all, y_all, stratify=y_all, 
+
+X_train, X_test, y_train, y_test = train_test_split(X_all, y_all, stratify=y_all, 
                                                     test_size=0.24, random_state=42)
 print "\n"
 print "Train set 'fatal' pct = {:.2f}%".format(100 * (y_train == 1).mean())
@@ -295,6 +323,7 @@ def train_predict(clf, X_train, y_train, X_test, y_test):
 # Import classifiers:
 # TODO: Import the three supervised learning models from sklearn
 from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import SGDClassifier
 from sklearn.tree import DecisionTreeClassifier
 
@@ -307,8 +336,8 @@ clf_D = SGDClassifier(shuffle=True, learning_rate="optimal", penalty='l2', rando
 
 # TODO: Execute the 'train_predict' function for each classifier and each training set size
 # train_predict(clf, X_train, y_train, X_test, y_test)
-# for clf in [clf_A, clf_B, clf_C, clf_D]:
-for clf in [clf_C]:
+for clf in [clf_A, clf_B, clf_C, clf_D]:
+# for clf in [clf_B]:
     print "\n{}: \n".format(clf.__class__.__name__)
     train_predict(clf, X_train, y_train, X_test, y_test)
 
@@ -318,26 +347,19 @@ for clf in [clf_C]:
 # LogisticRegression:   f1 = 0.7780
 # SGDClassifier:        f1 = 0.7795
 
-# Now we need to do some PCA
-# def doPCA(data):
-#     from sklearn.decomposition import PCA
-#     pca = PCA(n_components=400)
-#     pca.fit(data)
-#     return pca.explained_variance_ratio_
-# print("Explained Varience: ")
-# print(doPCA(X_all))
 
-# Do logistic regresssion, pca, gridsearchcv, and call it a day
 # TODO: Import 'GridSearchCV' and 'make_scorer'
-
+from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import make_scorer
 from sklearn.cross_validation import StratifiedShuffleSplit
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import normalize
+# from sklearn.estimator import get_params
+
 
 
 parameters = {
-    'C': np.logspace(0,4,17),
+    'C': np.logspace(0,4,10),
     'penalty':['l1', 'l2'],
     'class_weight':[None, 'balanced'],
     }
@@ -350,10 +372,14 @@ clf = LogisticRegression(random_state=30)
 f1_scorer = make_scorer(f1_score, pos_label=1)
 
 # TODO: Perform grid search on the classifier using the f1_scorer as the scoring method
-#grid_obj = GridSearchCV(clf, parameters, cv=scv, scoring=f1_scorer)
+# grid_obj = GridSearchCV(clf, parameters, cv=scv, scoring=f1_scorer)
+
 grid_obj = GridSearchCV(clf, parameters, cv=scv,
                         scoring=f1_scorer, verbose=1,
                         n_jobs=-1, pre_dispatch='2*n_jobs')
+# grid_obj = get_params(clf, parameters, cv=scv,
+#                         scoring=f1_scorer, verbose=1,
+#                         n_jobs=-1, pre_dispatch='2*n_jobs')
 
 # TODO: Fit the grid search object to the training data and find the optimal parameters
 grid_obj = grid_obj.fit(X_train, y_train)

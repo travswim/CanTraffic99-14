@@ -194,12 +194,12 @@ def plotfatalalities():
     plt.show()
 
 def plot(feature):
-    plt.ylabel('Number of fatalities')
-    plt.title('Canadian Fatal Vehicle Accidents by Year')
-    plt.xticks(ind, tuple(map(str, range(start, end + 1))))
-    plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
-    plt.legend((p1, p2), ('Fatal', 'Non-Fatal'))
-    plt.show()
+    # plt.ylabel('Number of fatalities')
+    # plt.title('Canadian Fatal Vehicle Accidents by Year')
+    # plt.xticks(ind, tuple(map(str, range(start, end + 1))))
+    # plt.yticks(np.arange(0, rounder(max(max_feature)), rounder(max(max_feature))/10))
+    # plt.legend((p1, p2), ('Fatal', 'Non-Fatal'))
+    # plt.show()
     # Setup Variables, Lists, & Dictionaries for plots
     N = end - start + 1 # Year range
     ind = np.arange(N)
@@ -295,7 +295,8 @@ def plot(feature):
     plt.show()
 # Call plot function
 # plot('P_SEX')
-# plot('C_WTHR')
+plot('C_WTHR')
+plot('V_TYPE')
 
 plotfatal()
 plotfatalalities()
